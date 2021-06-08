@@ -1,1 +1,1 @@
-# Pokemon GAN
+# Pokemon WGAN
