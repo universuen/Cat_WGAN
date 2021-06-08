@@ -7,10 +7,11 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 import numpy as np
 
-from pokemon_generator import config
-from pokemon_generator.datasets import RealImageDataset
-from pokemon_generator import models
-from pokemon_generator.logger import Logger
+from . import config
+from .datasets import RealImageDataset
+from . import models
+from .logger import Logger
+from ._utils import init_weights, train_d_model, train_g_model, save_samples, show_samples
 
 
 class PokemonGenerator:
@@ -41,21 +42,32 @@ class PokemonGenerator:
         )
         self.logger.info('model was saved successfully')
 
+    def generate(self, seed: int = None):
+        latent_vector = torch.randn(
+            1,
+            config.data.latent_vector_size,
+            1,
+            1,
+            device=config.device,
+        )
+        img = self.model(latent_vector).squeeze().detach().numpy()
+        return np.transpose(img, (1, 2, 0))
+
     def train(
             self,
             plots_dir='',
     ):
-        self.logger.info('started training new model')
+        self.logger.info('started dataset new model')
+
         # prepare data
         dataset = RealImageDataset(
-            config.path.training_data,
+            config.path.training_dataset,
             transform=transforms.Compose(
                 [
-                    transforms.ToTensor(),
-                    lambda x: x[:3],
                     transforms.Resize(config.data.image_size),
                     transforms.CenterCrop(config.data.image_size),
-                    lambda x: x.float(),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ]
             ),
         )
@@ -66,134 +78,83 @@ class PokemonGenerator:
         )
 
         # prepare models
-        def init_weights(layer: nn.Module):
-            layer_name = layer.__class__.__name__
-            if 'Conv' in layer_name:
-                nn.init.normal_(layer.weight.data, 0.0, 0.02)
-            elif layer_name == 'BatchNorm2d':
-                nn.init.normal_(layer.weight.data, 1.0, 0.02)
-                nn.init.constant_(layer.bias.data, 0)
-
-        generator_model = models.Generator(
+        d_model = models.Discriminator(
+            input_size=config.data.image_size,
+        )
+        d_model.apply(init_weights)
+        g_model = models.Generator(
             input_size=config.data.latent_vector_size,
-            output_size=config.data.image_size
+            output_size=config.data.image_size,
         )
-        generator_model.apply(init_weights)
-        discriminator_model = models.Discriminator(
-            input_size=config.data.image_size
-        )
-        discriminator_model.apply(init_weights)
+        g_model.apply(init_weights)
 
-        # prepare the criterion and optimizers
-        criterion = nn.BCELoss()
-        generator_optimizer = optim.Adam(
-            generator_model.parameters(),
+        # link models with optimizers
+        d_optimizer = torch.optim.RMSprop(
+            params=d_model.parameters(),
             lr=config.training.learning_rate,
-            betas=(0.5, 0.999)
         )
-        discriminator_optimizer = optim.Adam(
-            discriminator_model.parameters(),
+        g_optimizer = torch.optim.RMSprop(
+            params=g_model.parameters(),
             lr=config.training.learning_rate,
-            betas=(0.5, 0.999)
         )
 
-        # train models
-        generator_losses = []
-        discriminator_losses = []
-
-        # collect a generated result with the fixed latent vector in every epoch
-        fixed_lv = torch.randn(
-            3,
+        # prepare to record dataset plots
+        d_losses = []
+        g_losses = []
+        fixed_latent_vector = torch.randn(
+            config.training.sample_num,
             config.data.latent_vector_size,
             1,
             1,
-            device=config.device
         )
-        samples = []
 
+        # train
         for epoch in range(config.training.epochs):
             print(f'Epoch: {epoch + 1}')
+            for idx, (real_images, _) in enumerate(data_loader):
+                print(f'\rProcess: {100 * (idx + 1) / len(data_loader): .2f}%', end='')
+                # clamp the discriminator's parameters
+                for para in d_model.parameters():
+                    para.data.clamp_(-config.training.clamp_value, config.training.clamp_value)
 
-            for idx, (real_images, labels) in enumerate(data_loader, 0):
-                print(f'\rProcess: {(idx + 1) * 100 / len(data_loader): .2f}%', end='')
-
-                discriminator_model.zero_grad()
-
-                # feed the discriminator with real images
-                real_images = real_images.to(config.device)
-                labels = labels.to(config.device).float()
-                y = discriminator_model(real_images)
-                loss_real = criterion(y.view(-1), labels)
-                loss_real.backward()
-
-                # feed the discriminator with fake images
-                noises = torch.randn(
-                    config.training.batch_size,
-                    config.data.latent_vector_size,
-                    1,
-                    1,
-                    device=config.device
+                d_losses.append(
+                    train_d_model(
+                        d_model=d_model,
+                        g_model=g_model,
+                        real_images=real_images,
+                        d_optimizer=d_optimizer,
+                    )
                 )
-                labels = torch.zeros(config.training.batch_size)
-                fake_images = generator_model(noises)
-                y = discriminator_model(fake_images.detach())
-                loss_fake = criterion(y.view(-1), labels)
-                loss_fake.backward()
-
-                # optimize the model and collect the loss
-                discriminator_optimizer.step()
-                discriminator_losses.append(loss_real.item() + loss_fake.item())
-
-                generator_model.zero_grad()
-
-                # the target for the generator is letting the discriminator thinks its products are real,
-                # so the labels should all be 1
-                labels = torch.ones(config.training.batch_size)
-                y = discriminator_model(fake_images)
-                loss = criterion(y.view(-1), labels)
-                loss.backward()
-                generator_optimizer.step()
-                generator_losses.append(loss.item())
+                g_losses.append(
+                    train_g_model(
+                        g_model=g_model,
+                        d_model=d_model,
+                        g_optimizer=g_optimizer,
+                    )
+                )
 
             print(
                 f"\n"
-                f"Discriminator loss: {discriminator_losses[-1]}\n"
-                f"Generator loss: {generator_losses[-1]}\n"
+                f"Discriminator loss: {d_losses[-1]}\n"
+                f"Generator loss: {g_losses[-1]}\n"
             )
-            with torch.no_grad():
-                fake_images = generator_model(fixed_lv).detach().cpu()
-            samples.append(make_grid(fake_images))
 
-        self.model = generator_model
+            # save losses plot
+            plt.title("Generator and Discriminator Loss During Training")
+            plt.plot(g_losses, label="generator")
+            plt.plot(d_losses, label="discriminator")
+            plt.xlabel("iterations")
+            plt.ylabel("Loss")
+            plt.legend()
+            plt.savefig(fname=str(config.path.training_plots / 'losses.jpg'))
+            plt.close('all')
+
+            # save samples
+            save_samples(
+                file_name=f'E{epoch + 1}.jpg',
+                samples=g_model(fixed_latent_vector)
+            )
+
+        self.model = g_model
         self.save_model()
-
-        plt.figure(figsize=(10, 5))
-        plt.title("Generator and Discriminator Loss During Training")
-        plt.plot(generator_losses, label="generator")
-        plt.plot(discriminator_losses, label="discriminator")
-        plt.xlabel("iterations")
-        plt.ylabel("Loss")
-        plt.legend()
-        plt.savefig(fname=plots_dir + 'losses.jpg')
-
-        fig = plt.figure()
-        plt.axis("off")
-        plots = [
-            [
-                plt.imshow(
-                    np.transpose(
-                        img,
-                        (1, 2, 0),
-                    ),
-                    animated=True,
-                )
-            ]
-            for img in samples
-        ]
-        ani = animation.ArtistAnimation(
-            fig=fig,
-            artists=plots,
-            interval=30,
-            blit=True
-        )
-        ani.save(filename=plots_dir + 'animation.gif')
+        self.logger.info(f'model was saved')

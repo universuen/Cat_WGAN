@@ -1,1 +1,1 @@
-# python_template
+# Pokemon GAN

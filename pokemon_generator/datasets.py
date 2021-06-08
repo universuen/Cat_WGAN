@@ -23,13 +23,11 @@ class RealImageDataset(Base):
         return len(self.file_names)
 
     def __getitem__(self, idx: int):
-        img_path = self.img_dir / self.file_names[idx]
-        image = Image.open(str(img_path))
+        img_path = str(self.img_dir / self.file_names[idx])
+        image = Image.open(img_path)
         label = 1.0
         if self.transform:
             image = self.transform(image)
         if self.target_transform:
             label = self.target_transform(label)
         return image, label
-
-

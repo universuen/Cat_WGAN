@@ -52,13 +52,11 @@ class Discriminator(nn.Module):
                 out_features=512
             ),
             nn.Linear(512, 64),
-            nn.Linear(64, 1)
+            nn.Linear(64, 1),
         )
-        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: torch.Tensor):
         x = self.conv_pool_layers(x)
         x = self.flatten(x)
         x = self.linear_layers(x)
-        x = self.sigmoid(x)
         return x

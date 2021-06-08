@@ -14,16 +14,16 @@ class Generator(nn.Module):
         modules = [
             nn.ConvTranspose2d(
                 in_channels=input_size,
-                out_channels=output_size * 2,
-                kernel_size=(2, 2),
+                out_channels=output_size,
+                kernel_size=(4, 4),
                 stride=(1, 1),
                 padding=(0, 0),
                 bias=False,
             ),
-            nn.BatchNorm2d(output_size * 2),
+            nn.BatchNorm2d(output_size),
             nn.ReLU(True),
         ]
-        num_channels = output_size
+        num_channels = output_size // 2
         while num_channels != 4:
             modules.append(
                 nn.ConvTranspose2d(

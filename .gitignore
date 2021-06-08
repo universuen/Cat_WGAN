@@ -10,4 +10,4 @@ __pycache__/
 venv/
 
 # space-intensive data
-data/
+dataset/
