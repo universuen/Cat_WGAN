@@ -23,12 +23,9 @@ def init_weights(layer: nn.Module):
     layer_name = layer.__class__.__name__
     if 'Conv' in layer_name:
         nn.init.normal_(layer.weight.data, 0.0, 0.02)
-    elif layer_name == 'LayerNorm':
+    elif layer_name == 'BatchNorm2d':
         nn.init.normal_(layer.weight.data, 1.0, 0.02)
         nn.init.constant_(layer.bias.data, 0)
-    # elif layer_name == 'Linear':
-    #     nn.init.normal_(layer.weight.data, 0.0, 0.02)
-    #     nn.init.constant_(layer.bias.data, 0)
 
 
 def _cal_gradient_penalty(
@@ -77,9 +74,6 @@ def train_g_model(
     fake_images = g_model(l_v)
 
     # feed the discriminator with fake images to get its prediction
-    # PS: There is no need to freeze the discriminator's parameters,
-    # because the optimizer only is related with the generator, and the
-    # discriminator's gradients will be cleared first when it is being trained.
     prediction = d_model(fake_images)
 
     # calculate the loss

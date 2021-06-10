@@ -52,7 +52,6 @@ class PokemonGenerator:
 
     def train(
             self,
-            plots_dir='',
     ):
         self.logger.info('started dataset new model')
         # prepare data

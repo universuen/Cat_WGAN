@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch
 from torch import nn
 
@@ -9,43 +11,47 @@ class Generator(nn.Module):
             output_size: int
     ):
         super().__init__()
-        assert output_size % 2 == 0, "output_size should be an even integer."
+        self.flatten = nn.Flatten()
+        self.linear = nn.Sequential(
+            nn.Linear(input_size, 256),
+            nn.Linear(256, 512),
+        )
+
+        self.reshape = lambda x: x.view(-1, 512, 1, 1)
 
         current_size = [4, 4]
 
         modules = [
             nn.ConvTranspose2d(
-                in_channels=input_size,
+                in_channels=512,
                 out_channels=output_size,
                 kernel_size=(4, 4),
                 stride=(1, 1),
                 padding=(0, 0),
                 bias=False,
             ),
-            nn.LayerNorm([output_size, *current_size]),
-            nn.ReLU(True),
+            # nn.LayerNorm([output_size, *current_size]),
+            nn.BatchNorm2d(output_size),
+            nn.LeakyReLU(0.2, True),
         ]
 
         num_channels = output_size // 2
         while num_channels != 4:
-
             current_size = [i * 2 for i in current_size]
 
-            modules.append(
-                nn.ConvTranspose2d(
-                    in_channels=num_channels * 2,
-                    out_channels=num_channels,
-                    kernel_size=(4, 4),
-                    stride=(2, 2),
-                    padding=(1, 1),
-                    bias=False,
-                ),
-            )
-            modules.append(
-                nn.LayerNorm([num_channels, *current_size]),
-            )
-            modules.append(
-                nn.ReLU(True),
+            modules.extend(
+                [
+                    nn.ConvTranspose2d(
+                        in_channels=num_channels * 2,
+                        out_channels=num_channels,
+                        kernel_size=(4, 4),
+                        stride=(2, 2),
+                        padding=(1, 1),
+                        bias=False,
+                    ),
+                    nn.BatchNorm2d(num_channels),
+                    nn.LeakyReLU(0.2, True),
+                ]
             )
             num_channels //= 2
 
@@ -59,9 +65,13 @@ class Generator(nn.Module):
                 padding=(1, 1),
                 bias=False,
             ),
+            nn.LeakyReLU(0.2, True),
             nn.Tanh()
         )
 
     def forward(self, x: torch.Tensor):
+        x = self.flatten(x)
+        x = self.linear(x)
+        x = self.reshape(x)
         x = self.transpose_conv_layers(x)
         return x
