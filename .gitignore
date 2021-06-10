@@ -10,4 +10,5 @@ __pycache__/
 venv/
 
 # space-intensive data
-*.jpg
+dataset/
+samples/
