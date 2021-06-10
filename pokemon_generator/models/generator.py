@@ -10,7 +10,9 @@ class Generator(nn.Module):
     ):
         super().__init__()
         assert output_size % 2 == 0, "output_size should be an even integer."
-        self._output_size = output_size
+
+        current_size = [4, 4]
+
         modules = [
             nn.ConvTranspose2d(
                 in_channels=input_size,
@@ -20,11 +22,15 @@ class Generator(nn.Module):
                 padding=(0, 0),
                 bias=False,
             ),
-            nn.BatchNorm2d(output_size),
+            nn.LayerNorm([output_size, *current_size]),
             nn.ReLU(True),
         ]
+
         num_channels = output_size // 2
         while num_channels != 4:
+
+            current_size = [i * 2 for i in current_size]
+
             modules.append(
                 nn.ConvTranspose2d(
                     in_channels=num_channels * 2,
@@ -36,7 +42,7 @@ class Generator(nn.Module):
                 ),
             )
             modules.append(
-                nn.BatchNorm2d(num_channels),
+                nn.LayerNorm([num_channels, *current_size]),
             )
             modules.append(
                 nn.ReLU(True),

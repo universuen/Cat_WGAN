@@ -3,7 +3,6 @@ from typing import Callable
 from os import listdir
 
 from torch.utils.data import Dataset as Base
-from torchvision.io import read_image
 from PIL import Image
 
 

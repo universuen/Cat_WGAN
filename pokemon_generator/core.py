@@ -1,17 +1,14 @@
 import torch
-from torch import nn, optim
 from torchvision import transforms
-from torchvision.utils import make_grid
 from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
-from matplotlib import animation
 import numpy as np
 
 from . import config
 from .datasets import RealImageDataset
 from . import models
 from .logger import Logger
-from ._utils import init_weights, train_d_model, train_g_model, save_samples, show_samples
+from ._utils import init_weights, train_d_model, train_g_model, save_samples, show_samples, denormalize
 
 
 class PokemonGenerator:
@@ -28,7 +25,7 @@ class PokemonGenerator:
         self.model = models.Generator(
             input_size=config.data.latent_vector_size,
             output_size=config.data.image_size,
-        )
+        ).to(config.device)
         self.model.load_state_dict(
             torch.load(self.model_path)
         )
@@ -50,15 +47,14 @@ class PokemonGenerator:
             1,
             device=config.device,
         )
-        img = self.model(latent_vector).squeeze().detach().numpy()
-        return np.transpose(img, (1, 2, 0))
+        img = self.model(latent_vector).squeeze().detach().cpu().numpy()
+        return np.transpose(denormalize(img), (1, 2, 0))
 
     def train(
             self,
             plots_dir='',
     ):
         self.logger.info('started dataset new model')
-
         # prepare data
         dataset = RealImageDataset(
             config.path.training_dataset,
@@ -75,27 +71,30 @@ class PokemonGenerator:
             dataset=dataset,
             batch_size=config.training.batch_size,
             shuffle=True,
+            drop_last=True,
         )
 
         # prepare models
         d_model = models.Discriminator(
             input_size=config.data.image_size,
-        )
+        ).to(config.device)
         d_model.apply(init_weights)
         g_model = models.Generator(
             input_size=config.data.latent_vector_size,
             output_size=config.data.image_size,
-        )
+        ).to(config.device)
         g_model.apply(init_weights)
 
         # link models with optimizers
-        d_optimizer = torch.optim.RMSprop(
+        d_optimizer = torch.optim.Adam(
             params=d_model.parameters(),
-            lr=config.training.learning_rate,
+            lr=config.training.d_learning_rate,
+            betas=(0.5, 0.9),
         )
-        g_optimizer = torch.optim.RMSprop(
+        g_optimizer = torch.optim.Adam(
             params=g_model.parameters(),
-            lr=config.training.learning_rate,
+            lr=config.training.g_learning_rate,
+            betas=(0.5, 0.9),
         )
 
         # prepare to record dataset plots
@@ -106,25 +105,31 @@ class PokemonGenerator:
             config.data.latent_vector_size,
             1,
             1,
+            device=config.device,
         )
 
         # train
         for epoch in range(config.training.epochs):
+
             print(f'Epoch: {epoch + 1}')
             for idx, (real_images, _) in enumerate(data_loader):
-                print(f'\rProcess: {100 * (idx + 1) / len(data_loader): .2f}%', end='')
-                # clamp the discriminator's parameters
-                for para in d_model.parameters():
-                    para.data.clamp_(-config.training.clamp_value, config.training.clamp_value)
 
-                d_losses.append(
-                    train_d_model(
+                # show_samples(real_images)
+
+                real_images = real_images.to(config.device)
+
+                print(f'\rProcess: {100 * (idx + 1) / len(data_loader): .2f}%', end='')
+
+                d_loss = None
+                for _ in range(config.training.critic_num):
+                    d_loss = train_d_model(
                         d_model=d_model,
                         g_model=g_model,
                         real_images=real_images,
                         d_optimizer=d_optimizer,
                     )
-                )
+                d_losses.append(d_loss)
+
                 g_losses.append(
                     train_g_model(
                         g_model=g_model,
@@ -147,7 +152,7 @@ class PokemonGenerator:
             plt.ylabel("Loss")
             plt.legend()
             plt.savefig(fname=str(config.path.training_plots / 'losses.jpg'))
-            plt.close('all')
+            plt.clf()
 
             # save samples
             save_samples(
@@ -155,6 +160,5 @@ class PokemonGenerator:
                 samples=g_model(fixed_latent_vector)
             )
 
-        self.model = g_model
-        self.save_model()
-        self.logger.info(f'model was saved')
+            self.model = g_model
+            self.save_model()

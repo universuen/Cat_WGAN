@@ -8,5 +8,6 @@ if __name__ == '__main__':
     )
     generator.load_model()
     img = generator.generate()
+    plt.axis('off')
     plt.imshow(img)
     plt.show()
