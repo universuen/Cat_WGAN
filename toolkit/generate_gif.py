@@ -15,8 +15,8 @@ fig = plt.figure()
 cnt = -1
 for file_name in sorted(listdir(images_dir), key=lambda x: int(x[1:-4])):
     cnt += 1
-    if cnt % 10 != 0:
-        continue
+    if cnt == 100:
+        break
     images.append(
         [
             plt.imshow(
@@ -30,10 +30,10 @@ plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
     artists=images,
-    interval=100,
+    interval=200,
     blit=True,
 )
 
-ani.save(filename='animation.gif')
+ani.save(filename=str(plots_path / 'animation.gif'))
 plt.show()
 plt.close('all')
