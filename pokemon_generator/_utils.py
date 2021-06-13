@@ -1,4 +1,4 @@
-from typing import Iterable, Union
+from typing import Iterable, Union, Tuple
 from os import makedirs
 
 from . import config
@@ -152,12 +152,12 @@ def show_samples(
 
 
 def cal_conv2d_output_size(
-        input_size: Union[int, tuple],
-        kernel_size: Union[int, tuple],
-        stride: Union[int, tuple] = 1,
-        padding: Union[int, tuple] = 0,
-        dilation: Union[int, tuple] = 1,
-) -> tuple[int, int]:
+        input_size: Union[int, Tuple],
+        kernel_size: Union[int, Tuple],
+        stride: Union[int, Tuple] = 1,
+        padding: Union[int, Tuple] = 0,
+        dilation: Union[int, Tuple] = 1,
+) -> Tuple[int, int]:
     if type(input_size) is int:
         input_size = (input_size, input_size)
     if type(kernel_size) is int:
