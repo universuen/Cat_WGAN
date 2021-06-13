@@ -53,7 +53,8 @@ class PokemonGenerator:
     def train(
             self,
     ):
-        self.logger.info('started dataset new model')
+        self.logger.info('started training new model')
+        self.logger.info(f'using device: {config.device}')
         # prepare data
         dataset = RealImageDataset(
             config.path.training_dataset,
@@ -118,7 +119,7 @@ class PokemonGenerator:
         # train
         for epoch in range(config.training.epochs):
 
-            print(f'Epoch: {epoch + 1}')
+            print(f'\nEpoch: {epoch + 1}')
             for idx, (real_images, _) in enumerate(data_loader):
 
                 # show_samples(real_images)
@@ -154,7 +155,7 @@ class PokemonGenerator:
                 f"Discriminator loss: {d_losses[-1]}\n"
                 f"Discriminator learning rate: {d_optimizer.param_groups[0]['lr']}\n"
                 f"Generator loss: {g_losses[-1]}\n"
-                f"Generator learning rate: {g_optimizer.param_groups[0]['lr']}\n"
+                f"Generator learning rate: {g_optimizer.param_groups[0]['lr']}"
             )
 
             # save losses plot
