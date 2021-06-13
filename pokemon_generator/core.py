@@ -39,7 +39,7 @@ class PokemonGenerator:
         )
         self.logger.info('model was saved successfully')
 
-    def generate(self, seed: int = None):
+    def generate(self):
         latent_vector = torch.randn(
             1,
             config.data.latent_vector_size,
@@ -85,15 +85,23 @@ class PokemonGenerator:
         g_model.apply(init_weights)
 
         # link models with optimizers
-        d_optimizer = torch.optim.Adam(
+        d_optimizer = torch.optim.RMSprop(
             params=d_model.parameters(),
             lr=config.training.d_learning_rate,
-            betas=(0.5, 0.9),
         )
-        g_optimizer = torch.optim.Adam(
+        d_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer=d_optimizer,
+            milestones=config.training.d_milestones,
+            gamma=config.training.d_lr_gamma,
+        )
+        g_optimizer = torch.optim.RMSprop(
             params=g_model.parameters(),
             lr=config.training.g_learning_rate,
-            betas=(0.5, 0.9),
+        )
+        g_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer=g_optimizer,
+            milestones=config.training.g_milestones,
+            gamma=config.training.g_lr_gamma,
         )
 
         # prepare to record dataset plots
@@ -120,7 +128,7 @@ class PokemonGenerator:
                 print(f'\rProcess: {100 * (idx + 1) / len(data_loader): .2f}%', end='')
 
                 d_loss = None
-                for _ in range(config.training.critic_num):
+                for _ in range(config.training.d_loop_num):
                     d_loss = train_d_model(
                         d_model=d_model,
                         g_model=g_model,
@@ -129,18 +137,24 @@ class PokemonGenerator:
                     )
                 d_losses.append(d_loss)
 
-                g_losses.append(
-                    train_g_model(
+                g_loss = None
+                for _ in range(config.training.g_loop_num):
+                    g_loss = train_g_model(
                         g_model=g_model,
                         d_model=d_model,
                         g_optimizer=g_optimizer,
                     )
-                )
+                g_losses.append(g_loss)
+
+            d_lr_scheduler.step()
+            g_lr_scheduler.step()
 
             print(
                 f"\n"
                 f"Discriminator loss: {d_losses[-1]}\n"
+                f"Discriminator learning rate: {d_optimizer.param_groups[0]['lr']}\n"
                 f"Generator loss: {g_losses[-1]}\n"
+                f"Generator learning rate: {g_optimizer.param_groups[0]['lr']}\n"
             )
 
             # save losses plot

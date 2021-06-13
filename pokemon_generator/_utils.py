@@ -23,7 +23,7 @@ def init_weights(layer: nn.Module):
     layer_name = layer.__class__.__name__
     if 'Conv' in layer_name:
         nn.init.normal_(layer.weight.data, 0.0, 0.02)
-    elif layer_name == 'BatchNorm2d':
+    elif 'Norm' in layer_name:
         nn.init.normal_(layer.weight.data, 1.0, 0.02)
         nn.init.constant_(layer.bias.data, 0)
 
@@ -35,7 +35,7 @@ def _cal_gradient_penalty(
 ):
     alpha = torch.rand(config.training.batch_size, 1, 1, 1).to(config.device)
 
-    interpolates = alpha * real_images + ((1 - alpha) * fake_images)
+    interpolates = alpha * real_images + (1 - alpha) * fake_images
     interpolates.requires_grad = True
 
     disc_interpolates = d_model(interpolates)

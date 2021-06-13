@@ -10,8 +10,10 @@ from . import (
     training,
 )
 
-if torch.cuda.is_available():
-    device = 'cuda'
-else:
-    device = 'cpu'
+device = 'auto'
 
+if device == 'auto':
+    if torch.cuda.is_available():
+        device = 'cuda'
+    else:
+        device = 'cpu'

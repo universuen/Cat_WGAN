@@ -1,2 +1,2 @@
-image_size = 64
+image_size = 128
 latent_vector_size = 100

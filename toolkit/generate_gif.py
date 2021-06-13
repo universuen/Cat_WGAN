@@ -12,11 +12,7 @@ images = []
 
 fig = plt.figure()
 
-cnt = -1
 for file_name in sorted(listdir(images_dir), key=lambda x: int(x[1:-4])):
-    cnt += 1
-    if cnt == 100:
-        break
     images.append(
         [
             plt.imshow(
@@ -30,7 +26,7 @@ plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
     artists=images,
-    interval=200,
+    interval=30,
     blit=True,
 )
 
