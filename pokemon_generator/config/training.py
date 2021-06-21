@@ -1,6 +1,6 @@
 batch_size = 64
 
-epochs = 10000
+epochs = 1000
 
 d_learning_rate = 2e-4
 d_lr_gamma = 1
