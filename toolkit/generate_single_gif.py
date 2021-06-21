@@ -10,7 +10,7 @@ START_SEED = 666
 END_SEED = 777
 STEPS_NUM = 100
 MODEL_NAME = 'pokemon.model'
-GIF_NAME = 'single_animation_pokemon.gif'
+GIF_NAME = 'single_animation_cat.gif'
 
 images = []
 

@@ -8,7 +8,7 @@ import context
 from pokemon_generator.config.path import training_plots as plots_path
 
 
-GIF_NAME = 'training_animation_pokemon.gif'
+GIF_NAME = 'training_animation_cat.gif'
 STEP = 10
 
 images_dir = plots_path / 'samples'
