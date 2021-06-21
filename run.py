@@ -1,9 +1,9 @@
 from matplotlib import pyplot as plt
 
-from pokemon_generator import PokemonGenerator, config
+from pokemon_generator import PokemonGenerator
+
 
 if __name__ == '__main__':
-    config.device = 'cpu'
     generator = PokemonGenerator(
         model_name='cat.model',
     )

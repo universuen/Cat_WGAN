@@ -1,13 +1,14 @@
 import torch
 from torch import nn
 
-from .._utils import cal_output_size, cal_conv2d_output_size
+from .._utils import cal_conv2d_output_size
+from .. import config
 
 
 class Discriminator(nn.Module):
     def __init__(
             self,
-            input_size: int
+            input_size=config.data.image_size,
     ):
         super().__init__()
 
@@ -82,10 +83,10 @@ class Discriminator(nn.Module):
 
         self.linear = nn.Sequential(
             nn.Linear(current_channels_num * 2, 512),
-            nn.Linear(512, 128),
-            nn.Linear(128, 64),
-            nn.Linear(64, 16),
-            nn.Linear(16, 1),
+            nn.Linear(512, 512),
+            nn.Linear(512, 512),
+            nn.Linear(512, 512),
+            nn.Linear(512, 1),
         )
 
     def forward(self, x: torch.Tensor):

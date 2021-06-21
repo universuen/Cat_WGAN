@@ -7,12 +7,23 @@ from matplotlib.image import imread
 import context
 from pokemon_generator.config.path import training_plots as plots_path
 
+
+GIF_NAME = 'training_animation_pokemon.gif'
+STEP = 10
+
 images_dir = plots_path / 'samples'
 images = []
 
 fig = plt.figure()
 
+cnt = -1
+
 for file_name in sorted(listdir(images_dir), key=lambda x: int(x[1:-4])):
+
+    cnt += 1
+    if cnt % STEP != 0:
+        continue
+
     images.append(
         [
             plt.imshow(
@@ -30,6 +41,6 @@ ani = animation.ArtistAnimation(
     blit=True,
 )
 
-ani.save(filename=str(plots_path / 'animation.gif'))
+ani.save(filename=str(plots_path / GIF_NAME))
 plt.show()
 plt.close('all')

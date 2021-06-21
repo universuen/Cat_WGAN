@@ -22,31 +22,36 @@ class PokemonGenerator:
         self.model = None
 
     def load_model(self):
-        self.model = models.Generator(
-            input_size=config.data.latent_vector_size,
-            output_size=config.data.image_size,
-        ).to(config.device)
+        self.model = models.Generator().to(config.device)
         self.model.load_state_dict(
             torch.load(self.model_path)
         )
         self.model.eval()
-        self.logger.info('model was loaded successfully')
+        self.logger.debug('model was loaded successfully')
 
     def save_model(self):
         torch.save(
             self.model.state_dict(),
             self.model_path
         )
-        self.logger.info('model was saved successfully')
+        self.logger.debug('model was saved successfully')
 
-    def generate(self):
-        latent_vector = torch.randn(
-            1,
-            config.data.latent_vector_size,
-            1,
-            1,
-            device=config.device,
-        )
+    def generate(
+            self,
+            seed: int = None,
+            latent_vector: torch.Tensor = None
+    ):
+
+        if seed is not None:
+            torch.manual_seed(seed)
+
+        if latent_vector is None:
+            latent_vector = torch.randn(
+                1,
+                config.data.latent_vector_size,
+                device=config.device,
+            )
+
         img = self.model(latent_vector).squeeze().detach().cpu().numpy()
         return np.transpose(denormalize(img), (1, 2, 0))
 
@@ -63,6 +68,7 @@ class PokemonGenerator:
                     transforms.Resize(config.data.image_size),
                     transforms.CenterCrop(config.data.image_size),
                     transforms.ToTensor(),
+                    lambda x:x[:3],
                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ]
             ),
@@ -75,14 +81,9 @@ class PokemonGenerator:
         )
 
         # prepare models
-        d_model = models.Discriminator(
-            input_size=config.data.image_size,
-        ).to(config.device)
+        d_model = models.Discriminator().to(config.device)
         d_model.apply(init_weights)
-        g_model = models.Generator(
-            input_size=config.data.latent_vector_size,
-            output_size=config.data.image_size,
-        ).to(config.device)
+        g_model = models.Generator().to(config.device)
         g_model.apply(init_weights)
 
         # link models with optimizers
@@ -111,8 +112,6 @@ class PokemonGenerator:
         fixed_latent_vector = torch.randn(
             config.training.sample_num,
             config.data.latent_vector_size,
-            1,
-            1,
             device=config.device,
         )
 
@@ -169,10 +168,14 @@ class PokemonGenerator:
             plt.clf()
 
             # save samples
+            g_model.eval()
             save_samples(
                 file_name=f'E{epoch + 1}.jpg',
                 samples=g_model(fixed_latent_vector)
             )
+            g_model.train()
 
             self.model = g_model
             self.save_model()
+
+        self.model.eval()

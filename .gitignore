@@ -8,3 +8,6 @@ __pycache__/
 
 # virtual environment
 venv/
+
+samples/
+dataset/

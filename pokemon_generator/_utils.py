@@ -58,6 +58,7 @@ def train_g_model(
         d_model: torch.nn.Module,
         g_optimizer: torch.optim.Optimizer,
 ) -> float:
+
     # clear the generator's gradients
     g_model.zero_grad()
 
@@ -65,8 +66,6 @@ def train_g_model(
     l_v = torch.randn(
         config.training.batch_size,
         config.data.latent_vector_size,
-        1,
-        1,
         device=config.device,
     )
 
@@ -94,6 +93,7 @@ def train_d_model(
         real_images: torch.Tensor,
         d_optimizer: torch.optim.Optimizer,
 ) -> float:
+
     # The whole workflow is similar with `train_g_model`
 
     d_model.zero_grad()
@@ -104,8 +104,6 @@ def train_d_model(
     l_v = torch.randn(
         config.training.batch_size,
         config.data.latent_vector_size,
-        1,
-        1,
         device=config.device,
     )
     fake_images = g_model(l_v).detach()
