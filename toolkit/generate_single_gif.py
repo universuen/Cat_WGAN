@@ -6,44 +6,43 @@ import context
 from generator import Generator
 from generator import config
 
-START_SEED = 555
-END_SEED = 777
-STEPS = 30
+SEEDS = [555, 666, 777, 888, 999]
+STEPS = 50
 MODEL_NAME = 'cat.model'
 GIF_NAME = 'single_animation_cat.gif'
 
-images = []
-
-torch.manual_seed(START_SEED)
-start_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
-torch.manual_seed(END_SEED)
-end_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
-
-delta = (end_vector - start_vector) / STEPS
-latent_vector = start_vector
-
-fig = plt.figure()
-
 generator = Generator(MODEL_NAME)
 generator.load_model()
+images = []
+fig = plt.figure()
 
-for j in range(STEPS + 1):
-    images.append(
-        [
-            plt.imshow(
-                generator.generate(
-                    latent_vector=latent_vector
-                ),
-                animated=True
-            )
-        ]
-    )
-    latent_vector += delta
+for i, _ in enumerate(SEEDS):
+
+    torch.manual_seed(SEEDS[i])
+    start_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
+    torch.manual_seed(SEEDS[(i + 1) % len(SEEDS)])
+    end_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
+    delta = (end_vector - start_vector) / STEPS
+    latent_vector = start_vector
+
+    for _ in range(STEPS + 1):
+        images.append(
+            [
+                plt.imshow(
+                    generator.generate(
+                        latent_vector=latent_vector
+                    ),
+                    animated=True
+                )
+            ]
+        )
+        latent_vector += delta
+
 
 plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
-    artists=images + images[::-1],
+    artists=images,
     interval=30,
     blit=True,
 )

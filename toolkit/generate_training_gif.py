@@ -9,7 +9,7 @@ from generator.config.path import training_plots as plots_path
 
 
 GIF_NAME = 'training_animation_cat.gif'
-STEP = 1
+STEP = 3
 
 images_dir = plots_path / 'samples'
 images = []
