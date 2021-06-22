@@ -1,6 +1,6 @@
 # Cat WGAN
 
-Generate your unique Pokemon with one click!
+Generate your unique cat with one click!
 
 ## Preview
 ![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/single_animation_cat.gif)
