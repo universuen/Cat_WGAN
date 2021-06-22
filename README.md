@@ -2,6 +2,11 @@
 
 Generate your unique Pokemon with one click!
 
+# Preview
+![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/losses.jpg)
+![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/training_animation_cat.gif)
+![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/single_animation_cat.gif)
+
 # Usage
 1. `pip install -r requirements.txt`
 2. `py run.py`
