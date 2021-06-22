@@ -1,7 +1,7 @@
-from pokemon_generator import PokemonGenerator
+from generator import Generator
 
 
 if __name__ == '__main__':
-    PokemonGenerator(
+    Generator(
         model_name='cat.model',
     ).train()

@@ -1,8 +1,8 @@
 from torchvision import transforms
 
 import context
-from pokemon_generator import config
-from pokemon_generator.datasets import RealImageDataset
+from generator import config
+from generator.datasets import RealImageDataset
 
 
 def test_real_image_dataset():

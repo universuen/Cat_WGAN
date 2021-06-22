@@ -1,5 +1,5 @@
 import context
-from pokemon_generator.logger import Logger
+from generator.logger import Logger
 
 
 def test_debug():

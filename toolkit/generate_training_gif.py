@@ -5,11 +5,11 @@ from matplotlib import animation
 from matplotlib.image import imread
 
 import context
-from pokemon_generator.config.path import training_plots as plots_path
+from generator.config.path import training_plots as plots_path
 
 
 GIF_NAME = 'training_animation_cat.gif'
-STEP = 10
+STEP = 1
 
 images_dir = plots_path / 'samples'
 images = []
@@ -37,7 +37,7 @@ plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
     artists=images,
-    interval=30,
+    interval=200,
     blit=True,
 )
 

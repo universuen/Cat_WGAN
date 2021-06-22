@@ -11,7 +11,7 @@ from .logger import Logger
 from ._utils import init_weights, train_d_model, train_g_model, save_samples, show_samples, denormalize
 
 
-class PokemonGenerator:
+class Generator:
     def __init__(
             self,
             model_name: str = None,

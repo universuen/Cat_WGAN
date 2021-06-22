@@ -1,14 +1,14 @@
 from matplotlib import pyplot as plt
 
-from pokemon_generator import PokemonGenerator
+from generator import Generator
 
 
 if __name__ == '__main__':
-    generator = PokemonGenerator(
+    generator = Generator(
         model_name='cat.model',
     )
     generator.load_model()
-    img = generator.generate()
+    img = generator.generate(555)
     plt.axis('off')
     plt.imshow(img)
     plt.show()

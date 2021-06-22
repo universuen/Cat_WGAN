@@ -3,31 +3,31 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 
 import context
-from pokemon_generator import PokemonGenerator
-from pokemon_generator import config
+from generator import Generator
+from generator import config
 
-START_SEED = 666
+START_SEED = 555
 END_SEED = 777
-STEPS_NUM = 100
-MODEL_NAME = 'pokemon.model'
+STEPS = 30
+MODEL_NAME = 'cat.model'
 GIF_NAME = 'single_animation_cat.gif'
 
 images = []
 
 torch.manual_seed(START_SEED)
-start_vector = torch.randn(1, config.data.latent_vector_size, 1, 1, device=config.device)
+start_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
 torch.manual_seed(END_SEED)
-end_vector = torch.randn(1, config.data.latent_vector_size, 1, 1, device=config.device)
+end_vector = torch.randn(1, config.data.latent_vector_size, device=config.device)
 
-delta = (end_vector - start_vector) / STEPS_NUM
+delta = (end_vector - start_vector) / STEPS
 latent_vector = start_vector
 
 fig = plt.figure()
 
-generator = PokemonGenerator(MODEL_NAME)
+generator = Generator(MODEL_NAME)
 generator.load_model()
 
-for j in range(STEPS_NUM + 1):
+for j in range(STEPS + 1):
     images.append(
         [
             plt.imshow(
@@ -43,8 +43,8 @@ for j in range(STEPS_NUM + 1):
 plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
-    artists=images,
-    interval=100,
+    artists=images + images[::-1],
+    interval=200,
     blit=True,
 )
 
