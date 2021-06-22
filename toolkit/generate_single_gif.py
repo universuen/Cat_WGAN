@@ -44,7 +44,7 @@ plt.axis("off")
 ani = animation.ArtistAnimation(
     fig=fig,
     artists=images + images[::-1],
-    interval=200,
+    interval=30,
     blit=True,
 )
 
