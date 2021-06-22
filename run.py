@@ -8,7 +8,7 @@ if __name__ == '__main__':
         model_name='cat.model',
     )
     generator.load_model()
-    img = generator.generate()
+    img = generator.generate(555)
     plt.axis('off')
     plt.imshow(img)
     plt.show()
