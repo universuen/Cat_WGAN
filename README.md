@@ -1,17 +1,17 @@
-# Pokemon WGAN
+# Cat WGAN
 
 Generate your unique Pokemon with one click!
 
-# Preview
-![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/losses.jpg)
-![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/training_animation_cat.gif)
+## Preview
 ![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/single_animation_cat.gif)
+![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/training_animation_cat.gif)
+![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/losses.jpg)
 
-# Usage
+## Usage
 1. `pip install -r requirements.txt`
 2. `py run.py`
 
-# Additional Info
+## Additional Info
 This project is portable for any legal image dataset, which means you
 can train your own model on a given dataset.
 
