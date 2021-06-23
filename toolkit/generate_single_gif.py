@@ -6,7 +6,7 @@ import context
 from generator import Generator
 from generator import config
 
-SEEDS = [555, 666, 777, 888, 999]
+SEEDS = [888, 777, 555]
 STEPS = 50
 MODEL_NAME = 'cat.model'
 GIF_NAME = 'single_animation_cat.gif'
