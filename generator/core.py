@@ -57,6 +57,7 @@ class Generator:
 
     def train(
             self,
+            start_from_checkpoint=True,
     ):
         self.logger.info('started training new model')
         self.logger.info(f'using device: {config.device}')
@@ -68,7 +69,7 @@ class Generator:
                     transforms.Resize(config.data.image_size),
                     transforms.CenterCrop(config.data.image_size),
                     transforms.ToTensor(),
-                    lambda x:x[:3],
+                    lambda x: x[:3],
                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ]
             ),
@@ -91,19 +92,9 @@ class Generator:
             params=d_model.parameters(),
             lr=config.training.d_learning_rate,
         )
-        d_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer=d_optimizer,
-            milestones=config.training.d_milestones,
-            gamma=config.training.d_lr_gamma,
-        )
         g_optimizer = torch.optim.RMSprop(
             params=g_model.parameters(),
             lr=config.training.g_learning_rate,
-        )
-        g_lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-            optimizer=g_optimizer,
-            milestones=config.training.g_milestones,
-            gamma=config.training.g_lr_gamma,
         )
 
         # prepare to record dataset plots
@@ -115,8 +106,24 @@ class Generator:
             device=config.device,
         )
 
+        start_epoch = 0
+
+        if start_from_checkpoint:
+            try:
+                checkpoint = torch.load(config.path.checkpoint)
+                d_model.load_state_dict(checkpoint['d_model_state_dict'])
+                g_model.load_state_dict(checkpoint['g_model_state_dict'])
+                d_optimizer.load_state_dict(checkpoint['d_optimizer_state_dict'])
+                g_optimizer.load_state_dict(checkpoint['g_optimizer_state_dict'])
+                d_losses = checkpoint['d_losses']
+                g_losses = checkpoint['g_losses']
+                fixed_latent_vector = checkpoint['fixed_latent_vector']
+                start_epoch = checkpoint['epoch'] + 1
+            except FileNotFoundError:
+                self.logger.warning('Checkpoint not found')
+
         # train
-        for epoch in range(config.training.epochs):
+        for epoch in range(start_epoch, config.training.epochs, ):
 
             print(f'\nEpoch: {epoch + 1}')
             for idx, (real_images, _) in enumerate(data_loader):
@@ -146,9 +153,6 @@ class Generator:
                     )
                 g_losses.append(g_loss)
 
-            d_lr_scheduler.step()
-            g_lr_scheduler.step()
-
             print(
                 f"\n"
                 f"Discriminator loss: {d_losses[-1]}\n"
@@ -177,5 +181,16 @@ class Generator:
 
             self.model = g_model
             self.save_model()
+
+            checkpoint = dict()
+            checkpoint['d_model_state_dict'] = d_model.state_dict()
+            checkpoint['g_model_state_dict'] = g_model.state_dict()
+            checkpoint['d_optimizer_state_dict'] = d_optimizer.state_dict()
+            checkpoint['g_optimizer_state_dict'] = g_optimizer.state_dict()
+            checkpoint['d_losses'] = d_losses
+            checkpoint['g_losses'] = g_losses
+            checkpoint['fixed_latent_vector'] = fixed_latent_vector
+            checkpoint['epoch'] = epoch
+            torch.save(checkpoint, config.path.checkpoint)
 
         self.model.eval()
