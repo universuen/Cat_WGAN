@@ -1,7 +1,9 @@
 # Cat WGAN
 
 *How the Steel Was Tempered*
+
 Generate your unique cat with one click!
+
 The training dataset can be found [there](https://www.kaggle.com/andrewmvd/animal-faces).
 
 ## Preview
