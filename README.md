@@ -2,7 +2,7 @@
 
 Generate your unique cat with one click!
 
-The training dataset can be found [there](https://www.kaggle.com/andrewmvd/animal-faces).
+The training dataset can be found [here](https://www.kaggle.com/andrewmvd/animal-faces).
 
 ## Preview
 ![](https://github.com/universuen/Cat_WGAN/blob/main/data/training/plots/single_animation_cat.gif)
