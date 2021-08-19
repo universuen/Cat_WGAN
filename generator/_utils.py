@@ -1,31 +1,10 @@
-from typing import Iterable, Union, Tuple
 from os import makedirs
 
 from . import config
 
 import torch
-from torch import nn
 from torchvision.utils import save_image, make_grid
 from matplotlib import pyplot as plt
-
-
-def cal_output_size(
-        input_size: Iterable[int],
-        module: nn.Module
-) -> int:
-    x = torch.randn(*input_size)
-    with torch.no_grad():
-        y = module(x)
-    return len(y.flatten())
-
-
-def init_weights(layer: nn.Module):
-    layer_name = layer.__class__.__name__
-    if 'Conv' in layer_name:
-        nn.init.normal_(layer.weight.data, 0.0, 0.02)
-    elif 'Norm' in layer_name:
-        nn.init.normal_(layer.weight.data, 1.0, 0.02)
-        nn.init.constant_(layer.bias.data, 0)
 
 
 def _cal_gradient_penalty(
@@ -49,6 +28,7 @@ def _cal_gradient_penalty(
         only_inputs=True
     )[0]
 
+    gradients = gradients.view(gradients.size()[0], -1)
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * config.training.gp_lambda
     return gradient_penalty
 
@@ -147,33 +127,3 @@ def show_samples(
     plt.imshow(plot)
     plt.show()
     plt.clf()
-
-
-def cal_conv2d_output_size(
-        input_size: Union[int, Tuple],
-        kernel_size: Union[int, Tuple],
-        stride: Union[int, Tuple] = 1,
-        padding: Union[int, Tuple] = 0,
-        dilation: Union[int, Tuple] = 1,
-) -> Tuple[int, int]:
-    if type(input_size) is int:
-        input_size = (input_size, input_size)
-    if type(kernel_size) is int:
-        kernel_size = (kernel_size, kernel_size)
-    if type(stride) is int:
-        stride = (stride, stride)
-    if type(padding) is int:
-        padding = (padding, padding)
-    if type(dilation) is int:
-        dilation = (dilation, dilation)
-
-    h_in, w_in = input_size
-
-    h_out = int(
-        (h_in + 2 * padding[0] - dilation[0] * (kernel_size[0] - 1) - 1) / stride[0] + 1
-    )
-    w_out = int(
-        (w_in + 2 * padding[1] - dilation[1] * (kernel_size[1] - 1) - 1) / stride[1] + 1
-    )
-
-    return h_out, w_out

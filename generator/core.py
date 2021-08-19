@@ -8,7 +8,7 @@ from . import config
 from .datasets import RealImageDataset
 from . import models
 from .logger import Logger
-from ._utils import init_weights, train_d_model, train_g_model, save_samples, show_samples, denormalize
+from ._utils import train_d_model, train_g_model, save_samples, show_samples, denormalize
 
 
 class Generator:
@@ -83,18 +83,18 @@ class Generator:
 
         # prepare models
         d_model = models.Discriminator().to(config.device)
-        d_model.apply(init_weights)
         g_model = models.Generator().to(config.device)
-        g_model.apply(init_weights)
 
         # link models with optimizers
-        d_optimizer = torch.optim.RMSprop(
+        d_optimizer = torch.optim.Adam(
             params=d_model.parameters(),
             lr=config.training.d_learning_rate,
+            betas=(0.5, 0.9),
         )
-        g_optimizer = torch.optim.RMSprop(
+        g_optimizer = torch.optim.Adam(
             params=g_model.parameters(),
             lr=config.training.g_learning_rate,
+            betas=(0.5, 0.9),
         )
 
         # prepare to record dataset plots
@@ -110,15 +110,16 @@ class Generator:
 
         if start_from_checkpoint:
             try:
-                checkpoint = torch.load(config.path.checkpoint)
+                checkpoint = torch.load(config.path.checkpoint, map_location='cpu')
                 d_model.load_state_dict(checkpoint['d_model_state_dict'])
                 g_model.load_state_dict(checkpoint['g_model_state_dict'])
                 d_optimizer.load_state_dict(checkpoint['d_optimizer_state_dict'])
                 g_optimizer.load_state_dict(checkpoint['g_optimizer_state_dict'])
                 d_losses = checkpoint['d_losses']
                 g_losses = checkpoint['g_losses']
-                fixed_latent_vector = checkpoint['fixed_latent_vector']
+                fixed_latent_vector = checkpoint['fixed_latent_vector'].to(config.device)
                 start_epoch = checkpoint['epoch'] + 1
+                torch.set_rng_state(checkpoint['rng_state'])
             except FileNotFoundError:
                 self.logger.warning('Checkpoint not found')
 
@@ -143,6 +144,7 @@ class Generator:
                         d_optimizer=d_optimizer,
                     )
                 d_losses.append(d_loss)
+                torch.cuda.empty_cache()
 
                 g_loss = None
                 for _ in range(config.training.g_loop_num):
@@ -152,13 +154,12 @@ class Generator:
                         g_optimizer=g_optimizer,
                     )
                 g_losses.append(g_loss)
+                torch.cuda.empty_cache()
 
             print(
                 f"\n"
                 f"Discriminator loss: {d_losses[-1]}\n"
-                f"Discriminator learning rate: {d_optimizer.param_groups[0]['lr']}\n"
                 f"Generator loss: {g_losses[-1]}\n"
-                f"Generator learning rate: {g_optimizer.param_groups[0]['lr']}"
             )
 
             # save losses plot
@@ -191,6 +192,7 @@ class Generator:
             checkpoint['g_losses'] = g_losses
             checkpoint['fixed_latent_vector'] = fixed_latent_vector
             checkpoint['epoch'] = epoch
+            checkpoint['rng_state'] = torch.get_rng_state()
             torch.save(checkpoint, config.path.checkpoint)
 
         self.model.eval()

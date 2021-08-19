@@ -1,68 +1,29 @@
 import torch
 from torch import nn
 
-from .. import config
+from ..config.data import latent_vector_size
+from ._sub_modules import ReshapeBlock, LinearBlock, UpSampleBlock
 
 
 class Generator(nn.Module):
     def __init__(
             self,
-            input_size: int = config.data.latent_vector_size,
-            output_size: int = config.data.image_size,
     ):
         super().__init__()
 
-        self.reshape = lambda x: x.view(-1, config.data.latent_vector_size, 1, 1)
-
-        current_size = [4, 4]
-        modules = [
-            nn.ConvTranspose2d(
-                in_channels=input_size,
-                out_channels=output_size,
-                kernel_size=(4, 4),
-                stride=(1, 1),
-                padding=(0, 0),
-                bias=False,
-            ),
-            nn.BatchNorm2d(output_size),
-            nn.LeakyReLU(0.2, True),
-        ]
-
-        num_channels = output_size // 2
-        while num_channels != 4:
-            current_size = [i * 2 for i in current_size]
-
-            modules.extend(
-                [
-                    nn.ConvTranspose2d(
-                        in_channels=num_channels * 2,
-                        out_channels=num_channels,
-                        kernel_size=(4, 4),
-                        stride=(2, 2),
-                        padding=(1, 1),
-                        bias=False,
-                    ),
-                    nn.BatchNorm2d(num_channels),
-                    nn.LeakyReLU(0.2, True),
-                ]
-            )
-            num_channels //= 2
-
-        self.transpose_conv = nn.Sequential(
-            *modules,
-            nn.ConvTranspose2d(
-                in_channels=8,
-                out_channels=3,
-                kernel_size=(4, 4),
-                stride=(2, 2),
-                padding=(1, 1),
-                bias=False,
-            ),
-            nn.LeakyReLU(0.2, True),
-            nn.Tanh()
+        self.model = nn.Sequential(
+            LinearBlock(latent_vector_size, 1024, is_output=True),
+            ReshapeBlock(-1, 1024, 1, 1),
+            UpSampleBlock(1024, 512),
+            UpSampleBlock(512, 256),
+            UpSampleBlock(256, 128),
+            UpSampleBlock(128, 64),
+            UpSampleBlock(64, 32),
+            UpSampleBlock(32, 16),
+            UpSampleBlock(16, 3, is_output=True),
+            nn.Tanh(),
         )
 
     def forward(self, x: torch.Tensor):
-        x = self.reshape(x)
-        x = self.transpose_conv(x)
+        x = self.model(x)
         return x
