@@ -10,7 +10,7 @@ from generator.config.training import batch_size
 
 
 GIF_NAME = 'training_animation_cat.gif'
-STEP = 1
+STEP = 10
 
 images_dir = path.training_plots / 'samples'
 images = []

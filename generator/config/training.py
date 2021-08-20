@@ -1,6 +1,6 @@
 batch_size = 128
 
-epochs = 1000
+epochs = 2000
 
 d_learning_rate = 2e-4
 d_loop_num = 5
