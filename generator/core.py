@@ -69,7 +69,6 @@ class Generator:
                     transforms.Resize(config.data.image_size),
                     transforms.CenterCrop(config.data.image_size),
                     transforms.ToTensor(),
-                    lambda x: x[:3],
                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ]
             ),
@@ -79,6 +78,7 @@ class Generator:
             batch_size=config.training.batch_size,
             shuffle=True,
             drop_last=True,
+            num_workers=4,
         )
 
         # prepare models
